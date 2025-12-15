@@ -1,12 +1,24 @@
 # GFS Wave Data to Zarr
 
-Automated pipeline to download NOAA GFS wave forecast data and convert it to cloud-optimized Zarr format.
+Automated pipeline to download NOAA GFS wave forecast data and convert it to cloud-optimized Zarr format with interactive web visualization.
+
+## 🌊 Live Visualization
+
+**[View Live Wave Forecast Map](https://andrewnakas.github.io/Gfs_wave_to_zarr/)**
+
+Interactive global wave forecast visualization featuring:
+- Real-time particle animation using leaflet-velocity
+- Click anywhere on the map to see detailed wave data
+- Updated every 6 hours with latest GFS model runs
+- Wave height, period, direction, wind waves, and swell data
 
 ## Overview
 
 This project uses GitHub Actions to automatically:
 - Download GFS wave model forecasts from NOAA NOMADS every 6 hours
 - Convert GRIB2 data to compressed Zarr format
+- Generate JSON data for web visualization
+- Deploy interactive map to GitHub Pages
 - Maintain only the latest forecast to prevent storage bloat
 - Provide easy access to wave forecast data via xarray
 
