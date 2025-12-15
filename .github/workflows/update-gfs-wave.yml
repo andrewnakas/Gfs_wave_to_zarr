@@ -1,0 +1,83 @@
+name: Update GFS Wave Data
+
+on:
+  schedule:
+    # Run at 5:30, 11:30, 17:30, 23:30 UTC (30 minutes after each 6-hour GFS cycle completes)
+    - cron: '30 5,11,17,23 * * *'
+  workflow_dispatch:  # Allow manual triggering
+  push:
+    branches:
+      - 'claude/**'  # Run on pushes to Claude branches
+
+permissions:
+  contents: write
+
+jobs:
+  update-wave-data:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref }}
+          fetch-depth: 1
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libeccodes-dev libeccodes-tools
+
+      - name: Install Python dependencies
+        run: |
+          pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Create data directory
+        run: |
+          mkdir -p data
+          # Add .gitattributes for LFS if needed
+          echo "data/*.zarr/** filter=lfs diff=lfs merge=lfs -text" >> .gitattributes || true
+
+      - name: Run GFS wave data update
+        run: |
+          python scripts/update_gfs_wave.py
+
+      - name: Check for changes
+        id: check_changes
+        run: |
+          if [ -d "data/gfs_wave.zarr" ]; then
+            echo "changes=true" >> $GITHUB_OUTPUT
+          else
+            echo "changes=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Configure Git
+        if: steps.check_changes.outputs.changes == 'true'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Commit and push changes
+        if: steps.check_changes.outputs.changes == 'true'
+        run: |
+          git add data/ .gitattributes
+          CYCLE=$(date -u +"%Y%m%d %HZ")
+          git commit -m "Update GFS wave data - $CYCLE" || exit 0
+          git push origin HEAD:${{ github.ref_name }}
+
+      - name: Report storage usage
+        if: always()
+        run: |
+          echo "=== Storage Usage ==="
+          du -h data/ 2>/dev/null || echo "No data directory"
+          echo ""
+          echo "=== Zarr Store Structure ==="
+          ls -lh data/gfs_wave.zarr/ 2>/dev/null || echo "No Zarr store yet"
