@@ -252,8 +252,11 @@ def generate_forecast_json(dataset):
                             time_dim: slice(0, n_times)
                         }).values
 
+                        # Ensure data is 1D array
+                        data = np.atleast_1d(data).flatten()
+
                         # Convert to list, replacing NaN with null
-                        data_list = [float(x) if not np.isnan(x) else None for x in data]
+                        data_list = [None if np.isnan(float(x)) else float(x) for x in data]
                         point[key] = data_list
                         break
 
