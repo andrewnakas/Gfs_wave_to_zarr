@@ -152,14 +152,31 @@ def compress_and_save_zarr(dataset, zarr_path):
     # Set up encoding for each variable
     encoding = {}
     for var in dataset.data_vars:
+        var_dims = dataset[var].dims
+        var_shape = dataset[var].shape
+
+        # Determine chunk sizes based on actual dimensions
+        chunks = []
+        for i, dim in enumerate(var_dims):
+            if dim == 'step' or 'time' in dim.lower():
+                # Chunk by single time step
+                chunks.append(1)
+            elif 'lat' in dim.lower():
+                # Chunk latitude to ~100 or full dimension if smaller
+                chunks.append(min(100, var_shape[i]))
+            elif 'lon' in dim.lower():
+                # Chunk longitude to ~100 or full dimension if smaller
+                chunks.append(min(100, var_shape[i]))
+            else:
+                # For other dimensions, use a reasonable default
+                chunks.append(min(100, var_shape[i]))
+
         encoding[var] = {
             'compressor': compressor,
-            'chunks': {
-                'step': 1,
-                'latitude': 100,
-                'longitude': 100,
-            }
+            'chunks': tuple(chunks)
         }
+
+        logger.debug(f"Variable {var}: dims={var_dims}, shape={var_shape}, chunks={tuple(chunks)}")
 
     # Remove old zarr store if it exists
     if zarr_path.exists():
