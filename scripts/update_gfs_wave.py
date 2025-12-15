@@ -16,6 +16,7 @@ import requests
 import xarray as xr
 import zarr
 import numpy as np
+from numcodecs import Blosc
 
 # Configure logging
 logging.basicConfig(
@@ -133,7 +134,7 @@ def load_grib_to_dataset(grib_files):
         raise ValueError("No GRIB files could be loaded")
 
     # Combine all forecast hours along time dimension
-    combined = xr.concat(datasets, dim='step')
+    combined = xr.concat(datasets, dim='step', coords='minimal', compat='override')
     return combined
 
 
@@ -146,7 +147,7 @@ def compress_and_save_zarr(dataset, zarr_path):
         zarr_path: Path to Zarr store
     """
     # Configure compression
-    compressor = zarr.Blosc(cname='zstd', clevel=3, shuffle=2)
+    compressor = Blosc(cname='zstd', clevel=3, shuffle=2)
 
     # Set up encoding for each variable
     encoding = {}
