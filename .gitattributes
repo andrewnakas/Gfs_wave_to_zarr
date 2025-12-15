@@ -1,3 +1,4 @@
 # Handle Zarr files
 data/**/* binary
 *.zarr/** binary
+data/*.zarr/** filter=lfs diff=lfs merge=lfs -text
