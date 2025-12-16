@@ -101,7 +101,7 @@ def generate_velocity_json(dataset):
     ds = dataset.isel(step=0)
 
     # Get dimensions
-    dims = list(ds.dims.keys())
+    dims = list(ds.sizes.keys())  # Use sizes instead of dims
     lat_dim = [d for d in dims if 'lat' in d.lower()][0]
     lon_dim = [d for d in dims if 'lon' in d.lower()][0]
 
@@ -201,16 +201,19 @@ def generate_forecast_json(dataset):
     logger.info("Generating forecast JSON for point data")
 
     # Get dimensions
-    dims = list(dataset.dims.keys())
+    dims = list(dataset.sizes.keys())  # Use sizes instead of dims
     lat_dim = [d for d in dims if 'lat' in d.lower()][0]
     lon_dim = [d for d in dims if 'lon' in d.lower()][0]
     time_dim = [d for d in dims if 'step' in d.lower() or 'time' in d.lower()][0]
 
-    # Subsample grid more aggressively for forecast data (larger file)
+    # Subsample grid VERY aggressively for forecast data to reduce file size
+    # Use every 10th point instead of every 4th to create much smaller file
     ds_sub = dataset.isel({
-        lat_dim: slice(None, None, 4),
-        lon_dim: slice(None, None, 4)
+        lat_dim: slice(None, None, 10),
+        lon_dim: slice(None, None, 10)
     })
+
+    logger.info(f"Forecast grid size: {ds_sub.sizes[lat_dim]} x {ds_sub.sizes[lon_dim]} = {ds_sub.sizes[lat_dim] * ds_sub.sizes[lon_dim]} points")
 
     lats = ds_sub[lat_dim].values
     lons = ds_sub[lon_dim].values
@@ -232,8 +235,10 @@ def generate_forecast_json(dataset):
     # Build forecast points
     points = []
 
-    # Limit to first 10 forecast hours to reduce file size
-    n_times = min(10, ds_sub.sizes[time_dim])
+    # Limit to first 5 forecast hours to reduce file size (0, 3, 6, 9, 12 hours)
+    n_times = min(5, ds_sub.sizes[time_dim])
+
+    logger.info(f"Generating forecast data for {n_times} time steps")
 
     for i, lat in enumerate(lats):
         for j, lon in enumerate(lons):
