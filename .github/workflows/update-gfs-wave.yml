@@ -84,18 +84,8 @@ jobs:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: ./
           publish_branch: gh-pages
-          include_assets: |
-            index.html
-            app.js
-            wave_velocity.json
-            wave_forecast.json
-          exclude_assets: |
-            .github/
-            scripts/
-            data/
-            examples/
-            requirements.txt
-            README.md
+          exclude_assets: '.github,scripts,data,examples,requirements.txt,.gitignore,.gitattributes'
+          keep_files: false
 
       - name: Report storage usage
         if: always()
