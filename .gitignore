@@ -28,6 +28,9 @@ temp/
 *.grib2
 *.idx
 
+# Data files (Zarr stores are too large to commit)
+data/
+
 # IDE
 .vscode/
 .idea/

@@ -215,9 +215,9 @@ def main():
         cycle = get_latest_cycle()
         logger.info(f"Processing GFS wave cycle: {cycle.strftime('%Y%m%d %HZ')}")
 
-        # Download forecast hours (0 to 120 hours in 3-hour increments)
-        # For storage efficiency, we limit to 5 days of forecast
-        forecast_hours = list(range(0, 121, 3))
+        # Download forecast hours (0 to 72 hours in 3-hour increments)
+        # Reduced from 120 to 72 hours for faster processing (still 3 days of forecast)
+        forecast_hours = list(range(0, 73, 3))
         grib_files = []
 
         for fh in forecast_hours:

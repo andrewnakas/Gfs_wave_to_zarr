@@ -40,9 +40,10 @@ The dataset includes the following wave parameters:
 
 - **Source**: NOAA GFS Wave Model (0.16° resolution, global)
 - **Update Frequency**: Every 6 hours (00Z, 06Z, 12Z, 18Z cycles)
-- **Forecast Range**: 0-120 hours (5 days) in 3-hour increments
+- **Forecast Range**: 0-72 hours (3 days) in 3-hour increments
 - **Compression**: Zstd level 3 with Blosc
 - **Storage**: Rolling dataset (only latest forecast maintained)
+- **Note**: Zarr data is generated temporarily for web visualization, only JSON files are stored
 
 ## Usage
 
