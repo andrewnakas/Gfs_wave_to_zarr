@@ -207,10 +207,11 @@ def generate_forecast_json(dataset):
     time_dim = [d for d in dims if 'step' in d.lower() or 'time' in d.lower()][0]
 
     # Subsample grid VERY aggressively for forecast data to reduce file size
-    # Use every 10th point instead of every 4th to create much smaller file
+    # Use every 20th point to create a lightweight forecast grid
+    # This gives us ~2200 points globally which is sufficient for interpolation
     ds_sub = dataset.isel({
-        lat_dim: slice(None, None, 10),
-        lon_dim: slice(None, None, 10)
+        lat_dim: slice(None, None, 20),
+        lon_dim: slice(None, None, 20)
     })
 
     logger.info(f"Forecast grid size: {ds_sub.sizes[lat_dim]} x {ds_sub.sizes[lon_dim]} = {ds_sub.sizes[lat_dim] * ds_sub.sizes[lon_dim]} points")
@@ -221,22 +222,18 @@ def generate_forecast_json(dataset):
     # Ensure longitude is in -180 to 180 range
     lons = np.where(lons > 180, lons - 360, lons)
 
-    # Map variable names
+    # Map variable names - only include essential variables to reduce file size
     var_map = {
         'wave_height': ['HTSGW', 'htsgw', 'hs', 'swh'],
         'wave_period': ['PERPW', 'perpw', 'tp', 'mwp'],
-        'wave_direction': ['DIRPW', 'dirpw', 'dir', 'mwd'],
-        'wind_wave_height': ['WVHGT', 'wvhgt'],
-        'swell_height': ['SWELL', 'swell', 'shww'],
-        'swell_period': ['SWPER', 'swper'],
-        'swell_direction': ['SWDIR', 'swdir']
+        'wave_direction': ['DIRPW', 'dirpw', 'dir', 'mwd']
     }
 
     # Build forecast points
     points = []
 
-    # Limit to first 5 forecast hours to reduce file size (0, 3, 6, 9, 12 hours)
-    n_times = min(5, ds_sub.sizes[time_dim])
+    # Limit to first 3 forecast hours to reduce file size (0, 3, 6 hours)
+    n_times = min(3, ds_sub.sizes[time_dim])
 
     logger.info(f"Generating forecast data for {n_times} time steps")
 
@@ -293,7 +290,7 @@ def main():
         logger.info(f"Loading Zarr data from {ZARR_STORE}")
         dataset = xr.open_zarr(ZARR_STORE)
 
-        logger.info(f"Dataset dimensions: {dict(dataset.dims)}")
+        logger.info(f"Dataset dimensions: {dict(dataset.sizes)}")
         logger.info(f"Dataset variables: {list(dataset.data_vars)}")
 
         # Generate velocity JSON
@@ -306,15 +303,21 @@ def main():
 
         logger.info(f"Velocity JSON size: {velocity_file.stat().st_size / 1024 / 1024:.2f} MB")
 
-        # Generate forecast JSON
-        forecast_data = generate_forecast_json(dataset)
+        # Generate simplified forecast JSON (skip expensive point iteration for now)
+        logger.info("Generating simplified forecast JSON")
+        forecast_data = {
+            'cycle': dataset.attrs.get('cycle', 'unknown'),
+            'creation_date': dataset.attrs.get('creation_date', datetime.utcnow().isoformat()),
+            'message': 'Wave particle animation available. Point forecast data coming in future update.',
+            'points': []
+        }
         forecast_file = OUTPUT_DIR / "wave_forecast.json"
 
         logger.info(f"Writing forecast data to {forecast_file}")
         with open(forecast_file, 'w') as f:
             json.dump(forecast_data, f)
 
-        logger.info(f"Forecast JSON size: {forecast_file.stat().st_size / 1024 / 1024:.2f} MB")
+        logger.info(f"Forecast JSON size: {forecast_file.stat().st_size / 1024:.2f} KB")
 
         logger.info("Web data generation completed successfully")
 

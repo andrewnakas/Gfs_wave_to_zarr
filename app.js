@@ -110,6 +110,12 @@ async function getForecastData(lat, lon) {
 
         const forecastData = await response.json();
 
+        // Check if forecast data is available
+        if (!forecastData.points || forecastData.points.length === 0) {
+            showError(forecastData.message || 'Point forecast data not yet available. Enjoy the wave animation!');
+            return;
+        }
+
         // Find nearest grid point
         const nearest = findNearestPoint(lat, lon, forecastData);
 
